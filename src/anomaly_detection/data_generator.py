@@ -22,11 +22,15 @@ class TelecomDataGenerator:
     def generate(self) -> pd.DataFrame:
         raise NotImplementedError("Subclasses must implement generate()")
 
-    def generate_sinr(self, n: int, base_sinr_db: float = 10.0, noise_std: float = 5.0) -> np.ndarray:
+    def generate_sinr(
+        self, n: int, base_sinr_db: float = 10.0, noise_std: float = 5.0
+    ) -> np.ndarray:
         sinr = self.rng.normal(base_sinr_db, noise_std, n)
         return np.clip(sinr, -5, 25)
 
-    def sinr_to_throughput(self, sinr_db: np.ndarray, network_type: np.ndarray, noise_factor: float = 0.2) -> np.ndarray:
+    def sinr_to_throughput(
+        self, sinr_db: np.ndarray, network_type: np.ndarray, noise_factor: float = 0.2
+    ) -> np.ndarray:
         sinr_linear = 10 ** (sinr_db / 10)
         capacity_factor = np.log2(1 + sinr_linear)
         max_throughput = np.where(network_type == "5G", 300, 50)
@@ -48,13 +52,21 @@ class TelecomDataGenerator:
         congestion = congestion + noise
         return np.clip(congestion, 0, 1)
 
-    def congestion_to_latency(self, congestion: np.ndarray, base_latency_ms: float = 20) -> np.ndarray:
-        latency = base_latency_ms * (1 + 5 * congestion ** 2)
+    def congestion_to_latency(
+        self, congestion: np.ndarray, base_latency_ms: float = 20
+    ) -> np.ndarray:
+        latency = base_latency_ms * (1 + 5 * congestion**2)
         jitter = self.rng.normal(0, 5, len(latency))
         latency = latency + jitter
         return np.clip(latency, 10, 300)
 
-    def compute_qoe_mos(self, throughput_mbps: np.ndarray, latency_ms: np.ndarray, packet_loss_pct: np.ndarray, app_type: np.ndarray) -> np.ndarray:
+    def compute_qoe_mos(
+        self,
+        throughput_mbps: np.ndarray,
+        latency_ms: np.ndarray,
+        packet_loss_pct: np.ndarray,
+        app_type: np.ndarray,
+    ) -> np.ndarray:
         mos_throughput = 1 + 4 * (1 - np.exp(-throughput_mbps / 10))
         latency_penalty = np.clip(latency_ms / 100, 0, 2)
         loss_penalty = packet_loss_pct / 2
@@ -115,9 +127,7 @@ class AnomalyDataGenerator(TelecomDataGenerator):
             size=self.n_cells,
             p=[0.5, 0.3, 0.2],
         )
-        return pd.DataFrame(
-            {"cell_id": cell_ids, "cell_type": cell_types, "area_type": area_types}
-        )
+        return pd.DataFrame({"cell_id": cell_ids, "cell_type": cell_types, "area_type": area_types})
 
     def _generate_cell_timeseries(
         self, cell_id: str, cell_type: str, area_type: str, timestamps: pd.DatetimeIndex
@@ -133,10 +143,7 @@ class AnomalyDataGenerator(TelecomDataGenerator):
         base_traffic = {"macro": 25.0, "micro": 12.0, "small": 5.0}[cell_type]
         area_factor = {"urban": 1.3, "suburban": 1.0, "rural": 0.7}[area_type]
         traffic_load_gb = (
-            base_traffic
-            * area_factor
-            * (0.3 + 0.7 * congestion)
-            * self.rng.normal(1, 0.15, n)
+            base_traffic * area_factor * (0.3 + 0.7 * congestion) * self.rng.normal(1, 0.15, n)
         )
         traffic_load_gb = np.clip(traffic_load_gb, 0.5, 50.0)
 
@@ -145,9 +152,7 @@ class AnomalyDataGenerator(TelecomDataGenerator):
         avg_sinr_db = self.generate_sinr(n, base_sinr_db=base_sinr, noise_std=4.0)
 
         # --- network type (derive from cell type for throughput helper) ---
-        network_type = np.where(
-            self.rng.random(n) < 0.4, "5G", "4G"
-        )
+        network_type = np.where(self.rng.random(n) < 0.4, "5G", "4G")
 
         # --- throughput ---
         avg_throughput_mbps = self.sinr_to_throughput(avg_sinr_db, network_type)
@@ -161,9 +166,7 @@ class AnomalyDataGenerator(TelecomDataGenerator):
 
         # --- connected users (diurnal, cell-type dependent) ---
         base_users = {"macro": 350, "micro": 200, "small": 80}[cell_type]
-        connected_users = (
-            base_users * (0.3 + 0.7 * congestion) * self.rng.normal(1, 0.1, n)
-        )
+        connected_users = base_users * (0.3 + 0.7 * congestion) * self.rng.normal(1, 0.1, n)
         connected_users = np.clip(connected_users, 50, 500).astype(int)
 
         # --- PRB utilization (correlated with traffic load) ---
@@ -207,19 +210,13 @@ class AnomalyDataGenerator(TelecomDataGenerator):
 
             if atype == "traffic_spike":
                 factor = self.rng.uniform(3, 5)
-                df.at[idx, "traffic_load_gb"] = min(
-                    df.at[idx, "traffic_load_gb"] * factor, 50.0
-                )
+                df.at[idx, "traffic_load_gb"] = min(df.at[idx, "traffic_load_gb"] * factor, 50.0)
             elif atype == "sinr_drop":
                 drop = self.rng.uniform(10, 15)
-                df.at[idx, "avg_sinr_db"] = max(
-                    df.at[idx, "avg_sinr_db"] - drop, -5.0
-                )
+                df.at[idx, "avg_sinr_db"] = max(df.at[idx, "avg_sinr_db"] - drop, -5.0)
             elif atype == "latency_surge":
                 factor = self.rng.uniform(3, 5)
-                df.at[idx, "avg_latency_ms"] = min(
-                    df.at[idx, "avg_latency_ms"] * factor, 300.0
-                )
+                df.at[idx, "avg_latency_ms"] = min(df.at[idx, "avg_latency_ms"] * factor, 300.0)
             elif atype == "throughput_collapse":
                 divisor = self.rng.uniform(5, 10)
                 df.at[idx, "avg_throughput_mbps"] = max(
@@ -242,9 +239,7 @@ class AnomalyDataGenerator(TelecomDataGenerator):
         """
         cell_profiles = self._build_cell_profiles()
         total_hours = self.n_days * self.hours_per_day
-        timestamps = pd.date_range(
-            start="2024-01-01", periods=total_hours, freq="h"
-        )
+        timestamps = pd.date_range(start="2024-01-01", periods=total_hours, freq="h")
 
         frames = []
         for _, row in cell_profiles.iterrows():
@@ -259,9 +254,11 @@ class AnomalyDataGenerator(TelecomDataGenerator):
         df = pd.concat(frames, ignore_index=True)
         df = self._inject_anomalies(df)
 
-        print(f"Generated {len(df):,} rows  |  "
-              f"anomalies: {df['label_anomaly'].sum():,} "
-              f"({df['label_anomaly'].mean():.1%})")
+        print(
+            f"Generated {len(df):,} rows  |  "
+            f"anomalies: {df['label_anomaly'].sum():,} "
+            f"({df['label_anomaly'].mean():.1%})"
+        )
         return df
 
 

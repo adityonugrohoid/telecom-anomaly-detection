@@ -28,7 +28,9 @@ class FeatureEngineer:
         """
         self.config = config or FEATURE_CONFIG
 
-    def create_temporal_features(self, df: pd.DataFrame, timestamp_col: str = "timestamp") -> pd.DataFrame:
+    def create_temporal_features(
+        self, df: pd.DataFrame, timestamp_col: str = "timestamp"
+    ) -> pd.DataFrame:
         """
         Create time-based features from timestamp.
 
@@ -47,18 +49,13 @@ class FeatureEngineer:
         df["day_of_week"] = df[timestamp_col].dt.dayofweek
         df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
         df["is_peak_hour"] = (
-            ((df["hour"] >= 9) & (df["hour"] <= 11)) |
-            ((df["hour"] >= 18) & (df["hour"] <= 21))
+            ((df["hour"] >= 9) & (df["hour"] <= 11)) | ((df["hour"] >= 18) & (df["hour"] <= 21))
         ).astype(int)
 
         return df
 
     def create_rolling_aggregates(
-        self,
-        df: pd.DataFrame,
-        group_col: str,
-        value_cols: List[str],
-        windows: List[int] = [7, 30]
+        self, df: pd.DataFrame, group_col: str, value_cols: List[str], windows: List[int] = [7, 30]
     ) -> pd.DataFrame:
         """
         Create rolling window aggregations.
@@ -111,9 +108,7 @@ class FeatureEngineer:
 
         # Load per user: traffic load normalized by connected users
         if "traffic_load_gb" in df.columns and "connected_users" in df.columns:
-            df["load_per_user"] = df["traffic_load_gb"] / np.maximum(
-                df["connected_users"], 1
-            )
+            df["load_per_user"] = df["traffic_load_gb"] / np.maximum(df["connected_users"], 1)
 
         # Spectral efficiency: throughput per dB (SINR shifted to positive)
         if "avg_throughput_mbps" in df.columns and "avg_sinr_db" in df.columns:
@@ -123,9 +118,7 @@ class FeatureEngineer:
 
         # Congestion index: PRB utilization weighted by latency
         if "prb_utilization" in df.columns and "avg_latency_ms" in df.columns:
-            df["congestion_index"] = df["prb_utilization"] * (
-                df["avg_latency_ms"] / 50
-            )
+            df["congestion_index"] = df["prb_utilization"] * (df["avg_latency_ms"] / 50)
 
         # SINR-throughput ratio: expected relationship; anomaly if decoupled
         if "avg_sinr_db" in df.columns and "avg_throughput_mbps" in df.columns:
@@ -135,17 +128,12 @@ class FeatureEngineer:
 
         # Utilization-load gap: divergence suggests anomaly
         if "prb_utilization" in df.columns and "traffic_load_gb" in df.columns:
-            df["utilization_load_gap"] = (
-                df["prb_utilization"] - (df["traffic_load_gb"] / 50)
-            )
+            df["utilization_load_gap"] = df["prb_utilization"] - (df["traffic_load_gb"] / 50)
 
         return df
 
     def encode_categorical(
-        self,
-        df: pd.DataFrame,
-        categorical_cols: List[str] = None,
-        method: str = "onehot"
+        self, df: pd.DataFrame, categorical_cols: List[str] = None, method: str = "onehot"
     ) -> Tuple[pd.DataFrame, dict]:
         """
         Encode categorical features.
@@ -181,11 +169,7 @@ class FeatureEngineer:
 
         return df, encoding_map
 
-    def handle_missing_values(
-        self,
-        df: pd.DataFrame,
-        strategy: str = "mean"
-    ) -> pd.DataFrame:
+    def handle_missing_values(self, df: pd.DataFrame, strategy: str = "mean") -> pd.DataFrame:
         """
         Handle missing values.
 
@@ -214,7 +198,7 @@ class FeatureEngineer:
         df: pd.DataFrame,
         create_temporal: bool = True,
         create_interactions: bool = True,
-        encode_cats: bool = True
+        encode_cats: bool = True,
     ) -> pd.DataFrame:
         """
         Run the complete feature engineering pipeline.

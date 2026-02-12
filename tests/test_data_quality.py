@@ -25,7 +25,6 @@ def sample_data():
 
 
 class TestDataQuality:
-
     def test_no_missing_values(self, sample_data):
         critical_cols = ["cell_id", "avg_sinr_db", "traffic_load_gb", "label_anomaly"]
         for col in critical_cols:
@@ -61,7 +60,6 @@ class TestDataQuality:
 
 
 class TestDataGenerator:
-
     def test_generator_reproducibility(self):
         gen1 = AnomalyDataGenerator(seed=42, n_samples=1000, n_cells=3, n_days=2, hours_per_day=24)
         gen2 = AnomalyDataGenerator(seed=42, n_samples=1000, n_cells=3, n_days=2, hours_per_day=24)

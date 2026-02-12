@@ -56,12 +56,8 @@ class BaseModel:
             metrics["precision"] = precision_score(
                 y_test, y_pred, average="weighted", zero_division=0
             )
-            metrics["recall"] = recall_score(
-                y_test, y_pred, average="weighted", zero_division=0
-            )
-            metrics["f1"] = f1_score(
-                y_test, y_pred, average="weighted", zero_division=0
-            )
+            metrics["recall"] = recall_score(y_test, y_pred, average="weighted", zero_division=0)
+            metrics["f1"] = f1_score(y_test, y_pred, average="weighted", zero_division=0)
             if len(np.unique(y_test)) == 2:
                 y_proba = self.model.predict_proba(X_test)[:, 1]
                 metrics["roc_auc"] = roc_auc_score(y_test, y_proba)
@@ -70,8 +66,7 @@ class BaseModel:
             metrics["rmse"] = np.sqrt(metrics["mse"])
             metrics["mae"] = mean_absolute_error(y_test, y_pred)
             metrics["r2"] = 1 - (
-                np.sum((y_test - y_pred) ** 2)
-                / np.sum((y_test - y_test.mean()) ** 2)
+                np.sum((y_test - y_pred) ** 2) / np.sum((y_test - y_test.mean()) ** 2)
             )
         return metrics
 
@@ -105,6 +100,7 @@ class IsolationForestModel(BaseModel):
     def __init__(self, config: dict = None):
         super().__init__(config)
         from sklearn.ensemble import IsolationForest
+
         self.IsolationForest = IsolationForest
 
     def train(self, X_train, y_train=None):
@@ -170,12 +166,12 @@ def cross_validate_model(model, X, y, cv_folds=5, scoring="accuracy"):
 
 
 def print_metrics(metrics, title="Model Performance"):
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"{title:^50}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
     for metric, value in metrics.items():
         print(f"{metric:20s}: {value:8.4f}")
-    print(f"{'='*50}\n")
+    print(f"{'=' * 50}\n")
 
 
 def main():
@@ -195,9 +191,7 @@ def main():
 
     # Initialize and prepare data
     model = IsolationForestModel()
-    X_train, X_test, y_train, y_test = model.prepare_data(
-        df, target_col="is_anomaly"
-    )
+    X_train, X_test, y_train, y_test = model.prepare_data(df, target_col="is_anomaly")
 
     # Train (unsupervised -- y_train is not used)
     model.train(X_train)
@@ -217,8 +211,10 @@ def main():
     # Detection summary
     y_pred = model.predict(X_test)
     n_anomalies = y_pred.sum()
-    print(f"\nDetected {n_anomalies:,} anomalies out of "
-          f"{len(y_pred):,} samples ({n_anomalies/len(y_pred)*100:.1f}%)")
+    print(
+        f"\nDetected {n_anomalies:,} anomalies out of "
+        f"{len(y_pred):,} samples ({n_anomalies / len(y_pred) * 100:.1f}%)"
+    )
 
 
 if __name__ == "__main__":
