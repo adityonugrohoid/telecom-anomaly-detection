@@ -190,7 +190,13 @@ class AnomalyDataGenerator(TelecomDataGenerator):
         )
 
     def _inject_anomalies(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Inject ~anomaly_rate fraction of anomalies across 4 types."""
+        """Inject ~anomaly_rate fraction of anomalies across 4 types.
+
+        Each anomaly type corrupts MULTIPLE KPI columns simultaneously to
+        mimic real network faults (which rarely affect a single metric in
+        isolation).  This multi-column signature makes anomalies more
+        detectable by unsupervised models such as Isolation Forest.
+        """
         df = df.copy()
         n = len(df)
         n_anomalies = int(n * self.anomaly_rate)
@@ -209,19 +215,68 @@ class AnomalyDataGenerator(TelecomDataGenerator):
             df.at[idx, "anomaly_type"] = atype
 
             if atype == "traffic_spike":
-                factor = self.rng.uniform(3, 5)
+                # Primary: massive traffic increase (4-8x)
+                factor = self.rng.uniform(4, 8)
                 df.at[idx, "traffic_load_gb"] = min(df.at[idx, "traffic_load_gb"] * factor, 50.0)
+                # Secondary: latency increases (+50-100%)
+                lat_factor = self.rng.uniform(1.5, 2.0)
+                df.at[idx, "avg_latency_ms"] = min(df.at[idx, "avg_latency_ms"] * lat_factor, 300.0)
+                # Secondary: SINR degrades (-3 to -5 dB)
+                sinr_drop = self.rng.uniform(3, 5)
+                df.at[idx, "avg_sinr_db"] = max(df.at[idx, "avg_sinr_db"] - sinr_drop, -5.0)
+                # Secondary: connected users surge (+50-100%)
+                user_factor = self.rng.uniform(1.5, 2.0)
+                df.at[idx, "connected_users"] = min(
+                    int(df.at[idx, "connected_users"] * user_factor), 500
+                )
+
             elif atype == "sinr_drop":
-                drop = self.rng.uniform(10, 15)
+                # Primary: severe SINR degradation (12-18 dB)
+                drop = self.rng.uniform(12, 18)
                 df.at[idx, "avg_sinr_db"] = max(df.at[idx, "avg_sinr_db"] - drop, -5.0)
+                # Secondary: throughput collapses (-50-70%)
+                tp_factor = self.rng.uniform(0.3, 0.5)
+                df.at[idx, "avg_throughput_mbps"] = max(
+                    df.at[idx, "avg_throughput_mbps"] * tp_factor, 0.1
+                )
+                # Secondary: latency increases (+30-60%)
+                lat_factor = self.rng.uniform(1.3, 1.6)
+                df.at[idx, "avg_latency_ms"] = min(df.at[idx, "avg_latency_ms"] * lat_factor, 300.0)
+                # Secondary: packet loss rises (+1-3%)
+                loss_add = self.rng.uniform(1, 3)
+                df.at[idx, "packet_loss_pct"] = min(df.at[idx, "packet_loss_pct"] + loss_add, 5.0)
+
             elif atype == "latency_surge":
-                factor = self.rng.uniform(3, 5)
+                # Primary: extreme latency spike (5-8x)
+                factor = self.rng.uniform(5, 8)
                 df.at[idx, "avg_latency_ms"] = min(df.at[idx, "avg_latency_ms"] * factor, 300.0)
+                # Secondary: throughput degrades (-30-50%)
+                tp_factor = self.rng.uniform(0.5, 0.7)
+                df.at[idx, "avg_throughput_mbps"] = max(
+                    df.at[idx, "avg_throughput_mbps"] * tp_factor, 0.1
+                )
+                # Secondary: packet loss rises (+1-2%)
+                loss_add = self.rng.uniform(1, 2)
+                df.at[idx, "packet_loss_pct"] = min(df.at[idx, "packet_loss_pct"] + loss_add, 5.0)
+                # Secondary: PRB utilization increases (+20-40%)
+                prb_add = self.rng.uniform(0.20, 0.40)
+                df.at[idx, "prb_utilization"] = min(df.at[idx, "prb_utilization"] + prb_add, 0.95)
+
             elif atype == "throughput_collapse":
-                divisor = self.rng.uniform(5, 10)
+                # Primary: severe throughput drop (8-15x divisor)
+                divisor = self.rng.uniform(8, 15)
                 df.at[idx, "avg_throughput_mbps"] = max(
                     df.at[idx, "avg_throughput_mbps"] / divisor, 0.1
                 )
+                # Secondary: latency spikes (+50-100%)
+                lat_factor = self.rng.uniform(1.5, 2.0)
+                df.at[idx, "avg_latency_ms"] = min(df.at[idx, "avg_latency_ms"] * lat_factor, 300.0)
+                # Secondary: SINR degrades heavily (-5 to -8 dB)
+                sinr_drop = self.rng.uniform(5, 8)
+                df.at[idx, "avg_sinr_db"] = max(df.at[idx, "avg_sinr_db"] - sinr_drop, -5.0)
+                # Secondary: packet loss rises (+2-4%)
+                loss_add = self.rng.uniform(2, 4)
+                df.at[idx, "packet_loss_pct"] = min(df.at[idx, "packet_loss_pct"] + loss_add, 5.0)
 
         return df
 

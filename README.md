@@ -45,10 +45,10 @@ Domain physics: anomalies are injected with realistic temporal profiles and corr
 
 ## Key Findings
 
-- **F1:** ~0.75 on held-out test set
-- **Easiest anomaly type:** `traffic_spike` -- produces clear statistical deviations in traffic volume features
-- **Hardest anomaly type:** `throughput_collapse` -- subtle signature that overlaps with normal low-traffic periods
-- Rolling aggregate features significantly outperform point-in-time features for anomaly detection
+- **F1:** 0.70, **ROC-AUC:** 0.97 (unsupervised -- no labels used during training)
+- **Top detection features:** `packet_loss_pct`, `spectral_efficiency`, and `sinr_throughput_ratio` (permutation importance)
+- Multi-column anomaly injection (3-4 KPIs corrupted per anomaly) creates realistic fault signatures detectable by Isolation Forest
+- Threshold tuning at the 2nd percentile achieves 0.95 precision with 0.38 recall for high-confidence alerting
 
 ## Quick Start
 

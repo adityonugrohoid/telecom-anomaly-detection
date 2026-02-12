@@ -15,27 +15,23 @@ dependencies = [
     "pandas>=2.1.0",
     "numpy>=1.24.0,<2.0",      # SHAP has color conversion bug with NumPy 2.x
     "scikit-learn>=1.3.0",
-
     # ML Models
     # NOTE: XGBoost pinned for SHAP compatibility
     "xgboost>=1.7.0,<2.0",     # SHAP not compatible with XGBoost 2.x base_score format
     "lightgbm>=4.1.0",
-
     # Model Interpretability
     "shap>=0.42.0",
     "numba>=0.59.0",           # Required for Python 3.12 support
-
     # Visualization
     "matplotlib>=3.8.0",
     "seaborn>=0.13.0",
-
     # Jupyter
     "jupyter>=1.0.0",
     "ipykernel>=6.25.0",
-
     # Utilities
     "tqdm>=4.66.0",
     "pyyaml>=6.0",
+    "pyarrow>=23.0.0",
 ]
 
 [project.optional-dependencies]
