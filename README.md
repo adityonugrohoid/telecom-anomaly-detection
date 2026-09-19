@@ -173,6 +173,16 @@ Detected 1,440 anomalies out of 7,200 samples (20.0%)
 | Precision (2nd pct threshold) | 0.95 | High-confidence alert mode |
 | Recall (2nd pct threshold) | 0.38 | Trades coverage for precision |
 
+![Anomaly detection timeline for a sample cell](docs/figures/anomaly-detection-timeline.png)
+
+Traffic load, SINR, and throughput for one cell over the monitoring window, with injected anomalies marked in red.
+
+![Anomaly score distribution and confusion matrix](docs/figures/score-distribution-confusion-matrix.png)
+
+Score separation between normal and anomalous observations, alongside the resulting confusion matrix at the default threshold.
+
+Both figures are exported from the executed notebook by `scripts/export_notebook_figures.py`.
+
 ### Top Predictors
 
 1. `packet_loss_pct` - most discriminative KPI for fault isolation
